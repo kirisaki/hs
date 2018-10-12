@@ -14,20 +14,20 @@ module Web.Hs
 
 import qualified Data.ByteString.Lazy     as LBS
 import qualified Data.List                as L
+import           Data.Semigroup           ((<>))
 import qualified Data.Text.Lazy           as T
 import           Data.Text.Lazy.Encoding
 import           Lucid
 import           Network.HTTP.Types
 import           Network.Wai
 import qualified Network.Wai.Handler.Warp as WA
+import           Options.Applicative
 import           System.Directory
-import Options.Applicative
-import Data.Semigroup ((<>))
 
-server :: FilePath -> Application
-server base req respond = do
+server :: Options -> Application
+server opts req respond = do
   let path = L.intercalate "/" $
-        base : L.map (T.unpack . T.fromStrict) (pathInfo req)
+        base opts : L.map (T.unpack . T.fromStrict) (pathInfo req)
   isFile <- doesFileExist path
   isDir <- doesDirectoryExist path
   case (isFile, isDir) of
@@ -51,7 +51,7 @@ server base req respond = do
 
 fileList :: FilePath -> IO LBS.ByteString
 fileList path = do
-  contents <- getDirectoryContents path
+  contents <- L.sort <$> getDirectoryContents path
   return . renderBS $ do
     doctype_
     html_ $ do
@@ -62,26 +62,35 @@ fileList path = do
         mapM_ (p_ [] . toHtml) contents
 
 data Options = Options
-  { port :: Int
+  { base :: String
+  , port :: Int
   } deriving (Show, Eq)
 
-options :: Parser Options
-options = Options
-  <$> option auto
-  ( long "port" <>
-    metavar "PORT" <>
-    short 'p' <>
-    showDefault <>
-    value 8080 <>
+options :: IO (Parser Options)
+options = do
+  path <- getCurrentDirectory
+  return $ Options
+    <$> argument str
+    ( metavar "DIR" <>
+      showDefaultWith (const "<current directory>") <>
+      value path <>
+      help "Base path"
+    )
+    <*> option auto
+    ( long "port" <>
+      metavar "PORT" <>
+      short 'p' <>
+      showDefault <>
+      value 8080 <>
     help "Port"
-  )
+    )
 
 run :: IO ()
 run = do
-  opts <-  execParser
-    ( info (options <**> helper)
+  optsP <- options
+  opts <- execParser
+    ( info (optsP <**> helper)
       ( fullDesc <>
         header "hs - Simple web sever." )
     )
-  path <- getCurrentDirectory
-  WA.run (port opts) (server path)
+  WA.run (port opts) (server opts)
