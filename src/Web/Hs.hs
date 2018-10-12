@@ -52,8 +52,9 @@ server opts req respond = do
 
 fileList :: FilePath -> IO LBS.ByteString
 fileList path = do
-  files <- L.sort <$> (filterM doesFileExist =<< listDirectory path)
+  conts <- L.sort <$> listDirectory path
   dirs <- L.sort <$> (filterM doesDirectoryExist =<< listDirectory path)
+  let files = L.filter (not . flip elem dirs) conts
   return . renderBS $ do
     doctype_
     html_ $ do
