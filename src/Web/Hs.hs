@@ -12,6 +12,7 @@ module Web.Hs
   ( run
   ) where
 
+import           Control.Monad
 import qualified Data.ByteString.Lazy     as LBS
 import qualified Data.List                as L
 import           Data.Semigroup           ((<>))
@@ -51,7 +52,8 @@ server opts req respond = do
 
 fileList :: FilePath -> IO LBS.ByteString
 fileList path = do
-  contents <- L.sort <$> getDirectoryContents path
+  files <- L.sort <$> (filterM doesFileExist =<< listDirectory path)
+  dirs <- L.sort <$> (filterM doesDirectoryExist =<< listDirectory path)
   return . renderBS $ do
     doctype_
     html_ $ do
@@ -59,7 +61,8 @@ fileList path = do
         title_ [] "Hello Lucid!"
       body_ $ do
         h1_ [] "Lucid"
-        mapM_ (p_ [] . toHtml) contents
+        mapM_ (p_ [] . toHtml) dirs
+        mapM_ (p_ [] . toHtml) files
 
 data Options = Options
   { base :: String
