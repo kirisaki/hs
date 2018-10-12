@@ -30,10 +30,11 @@ server base req respond = do
   isDir <- doesDirectoryExist path
   case (isFile, isDir) of
     (True, False) ->
-      respond $ responseLBS
+      respond $ responseFile
       status200
-      [("Content-Type", "text/plain")]
-      (encodeUtf8 $ T.pack path `T.append` " exists")
+      []
+      path
+      Nothing
     (False, True) -> do
       html <- fileList path
       respond $ responseLBS
