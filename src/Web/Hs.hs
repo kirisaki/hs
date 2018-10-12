@@ -71,16 +71,17 @@ options = Options
   ( long "port" <>
     metavar "PORT" <>
     short 'p' <>
+    showDefault <>
+    value 8080 <>
     help "Port"
   )
 
 run :: IO ()
 run = do
-  print =<< execParser
+  opts <-  execParser
     ( info (options <**> helper)
       ( fullDesc <>
-        progDesc "Simple web server" <>
         header "hs - Simple web sever." )
     )
   path <- getCurrentDirectory
-  WA.run 8080 (server path)
+  WA.run (port opts) (server path)
