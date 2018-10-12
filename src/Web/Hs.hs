@@ -16,6 +16,7 @@ import qualified Data.ByteString.Lazy     as LBS
 import qualified Data.List                as L
 import qualified Data.Text.Lazy           as T
 import           Data.Text.Lazy.Encoding
+import           Lucid
 import           Network.HTTP.Types
 import           Network.Wai
 import qualified Network.Wai.Handler.Warp as WA
@@ -23,19 +24,39 @@ import           System.Directory
 
 server :: FilePath -> Application
 server base req respond = do
-  let path = T.intercalate "/" $ T.pack base : L.map T.fromStrict (pathInfo req)
-  exists <- doesFileExist $ T.unpack path
-  if exists
-    then
-    respond $ responseLBS
-    status200
-    [("Content-Type", "text/plain")]
-    (encodeUtf8 $ path `T.append` " exists")
-    else
-    respond $ responseLBS
-    status404
-    [("Content-Type", "text/plain")]
-    (encodeUtf8 $ path `T.append` " doesn't exist")
+  let path = L.intercalate "/" $
+        base : L.map (T.unpack . T.fromStrict) (pathInfo req)
+  isFile <- doesFileExist path
+  isDir <- doesDirectoryExist path
+  case (isFile, isDir) of
+    (True, False) ->
+      respond $ responseLBS
+      status200
+      [("Content-Type", "text/plain")]
+      (encodeUtf8 $ T.pack path `T.append` " exists")
+    (False, True) -> do
+      html <- fileList path
+      respond $ responseLBS
+        status200
+        [("Content-Type", "text/html")]
+        html
+    _ ->
+      respond $ responseLBS
+      status404
+      [("Content-Type", "text/plain")]
+      "404 Not found"
+
+fileList :: FilePath -> IO LBS.ByteString
+fileList path = do
+  contents <- getDirectoryContents path
+  return . renderBS $ do
+    doctype_
+    html_ $ do
+      head_ $
+        title_ [] "Hello Lucid!"
+      body_ $ do
+        h1_ [] "Lucid"
+        mapM_ (p_ [] . toHtml) contents
 
 run :: IO ()
 run = do

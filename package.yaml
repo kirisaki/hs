@@ -20,6 +20,7 @@ dependencies:
 - bytestring
 - directory
 - http-types
+- lucid
 - text
 - wai
 - warp
