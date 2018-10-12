@@ -21,6 +21,8 @@ import           Network.HTTP.Types
 import           Network.Wai
 import qualified Network.Wai.Handler.Warp as WA
 import           System.Directory
+import Options.Applicative
+import Data.Semigroup ((<>))
 
 server :: FilePath -> Application
 server base req respond = do
@@ -59,7 +61,26 @@ fileList path = do
         h1_ [] "Lucid"
         mapM_ (p_ [] . toHtml) contents
 
+data Options = Options
+  { port :: Int
+  } deriving (Show, Eq)
+
+options :: Parser Options
+options = Options
+  <$> option auto
+  ( long "port" <>
+    metavar "PORT" <>
+    short 'p' <>
+    help "Port"
+  )
+
 run :: IO ()
 run = do
+  print =<< execParser
+    ( info (options <**> helper)
+      ( fullDesc <>
+        progDesc "Simple web server" <>
+        header "hs - Simple web sever." )
+    )
   path <- getCurrentDirectory
   WA.run 8080 (server path)

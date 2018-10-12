@@ -21,6 +21,7 @@ dependencies:
 - directory
 - http-types
 - lucid
+- optparse-applicative
 - text
 - wai
 - warp
