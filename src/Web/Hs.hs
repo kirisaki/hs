@@ -66,8 +66,9 @@ fileList path = do
         mapM_ (p_ [] . toHtml) files
 
 data Options = Options
-  { base :: String
-  , port :: Int
+  { base    :: String
+  , port    :: Int
+  , version :: Bool
   } deriving (Show, Eq)
 
 options :: IO (Parser Options)
@@ -86,7 +87,12 @@ options = do
       short 'p' <>
       showDefault <>
       value 8080 <>
-    help "Port"
+      help "Port"
+    )
+    <*> switch
+    ( long "version" <>
+      short 'v' <>
+      help "Show version."
     )
 
 run :: IO ()
@@ -97,4 +103,8 @@ run = do
       ( fullDesc <>
         header "hs - Simple web sever." )
     )
-  WA.run (port opts) (server opts)
+  if version opts
+    then
+    print "hs - version 0.0.1"
+    else
+    WA.run (port opts) (server opts)
