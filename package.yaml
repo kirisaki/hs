@@ -27,7 +27,7 @@ dependencies:
 - warp
 
 library:
-  source-dirs: src
+  source-dirs: server
 
 executables:
   hs:
@@ -43,7 +43,7 @@ executables:
 tests:
   hs-test:
     main:                Spec.hs
-    source-dirs:         test
+    source-dirs:         test_server
     ghc-options:
     - -threaded
     - -rtsopts

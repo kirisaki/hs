@@ -1,4 +1,8 @@
 .stack-work/
 hs.cabal
 haddock
+node_modules/
+dist
+yarn-error.log
+elm-stuff/
 *~
