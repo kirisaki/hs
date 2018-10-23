@@ -8,9 +8,12 @@
 --
 -----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 module Web.Hs
   ( run
   ) where
+
+import           Web.Hs.TH
 
 import           Control.Monad
 import qualified Data.ByteString.Lazy     as LBS
@@ -25,8 +28,8 @@ import qualified Network.Wai.Handler.Warp as WA
 import           Options.Applicative
 import           System.Directory
 
-server :: Options -> Application
-server opts req respond = do
+server' :: Options -> Application
+server' opts req respond = do
   let path = L.intercalate "/" $
         base opts : L.map (T.unpack . T.fromStrict) (pathInfo req)
   isFile <- doesFileExist path
@@ -49,6 +52,27 @@ server opts req respond = do
       status404
       [("Content-Type", "text/plain")]
       "404 Not found"
+
+server :: Options -> Application
+server opts req respond = do
+  $(build)
+  case pathInfo req of
+    ["main.js"] ->
+      respond $ responseLBS
+      status202
+      [("Content-Type", "text/javascript")]
+      mainJs
+    _ ->
+      respond $ responseLBS
+      status202
+      [("Content-Type", "text/html")]
+      indexHtml
+
+mainJs :: LBS.ByteString
+mainJs = LBS.fromStrict $(loadFile "dist/main.js")
+
+indexHtml :: LBS.ByteString
+indexHtml = LBS.fromStrict$(loadFile "dist/index.html")
 
 fileList :: FilePath -> IO LBS.ByteString
 fileList path = do
